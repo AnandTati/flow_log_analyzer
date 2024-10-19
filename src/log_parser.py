@@ -7,15 +7,19 @@ class LogParser:
 
     @staticmethod
     def analyze(flow_log_file_name, lookup_file_name, protocol_map_file_name):
-        # Read the lookup file.
-        # The file contains the tag name for the port/protocol combination
-        # port,protocol,tagname
+
+        # Validating map file existence
         if not os.path.exists(lookup_file_name):
             raise FileNotFoundError('Lookup map file missing')
 
         if not os.path.exists(protocol_map_file_name):
             raise FileNotFoundError('Protocol map file missing')
 
+        print('Reading lookup and protocol map files')
+
+        # Read the lookup file.
+        # The file contains the tag name for the port/protocol combination
+        # port,protocol,tagname
         with open(lookup_file_name) as csvfile:
             reader = csv.reader(csvfile)
             lookup_data = list(reader)[1:] # Ignore first line (column headers)
@@ -41,6 +45,8 @@ class LogParser:
                         protocol_map[i] = row['Keyword']
                     continue
                 protocol_map[int(row['Protocol'])] = row['Keyword']
+
+        print('Parsing Flow Log file')
 
         # Count of matches for each tag
         tag_count_map = defaultdict(int)
@@ -95,19 +101,18 @@ class LogParser:
             if untagged > 0:
                 tag_count_map['Untagged'] = untagged
 
+        print('Completed parsing Flow Log file')
         return tag_count_map, port_count_map    
     
 def write_to_file(tag_count_map, port_count_map):
     if not os.path.exists('./out'):
         os.makedirs('./out')
 
-    print(dict(tag_count_map))
     with open('./out/tag_count.csv', 'w') as f:
         f.write('Tag,Count\n')
         for tag, count in tag_count_map.items():
             f.write(f"{tag},{count}\n")
 
-    print(dict(port_count_map))
     with open('./out/port_count.csv', 'w') as f:
         f.write('Port,Protocol,Count\n')
         for port, proto_count in port_count_map.items():
